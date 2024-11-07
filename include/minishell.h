@@ -6,7 +6,7 @@
 /*   By: mac <mac@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/08 12:14:26 by vconesa-          #+#    #+#             */
-/*   Updated: 2024/11/04 11:49:09 by mac              ###   ########.fr       */
+/*   Updated: 2024/11/07 15:37:02 by mac              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,12 +18,12 @@
 # include <stdlib.h>
 # include <fcntl.h>
 # include <stdio.h>
-# include <termios.h>
 # include <readline/readline.h>
 # include <readline/history.h>
 # include <sys/wait.h>
 # include <signal.h>
 # include <glob.h>
+# include <termios.h>
 // # include <linux/limits.h>
 
 # define EXEC_T 1
@@ -37,9 +37,12 @@
 # define MAXARGS 10
 # define PROMPT	"\001\e[45m\002>>> \001\e[0m\e[33m\002Minishell>$ \001\e[0m\002"
 
-# define WHITESPACE " \t\r\n\v"
+# define WHITESPACE " \t\r\v"
 # define SYMBOLS "<|>&()"
 # define PERMISSIONS 0664
+# define MAX_BUFFER_SIZE 100
+# define PATH_SEPARATOR ":"
+# define MAX_PATH_LENGTH 512
 
 # define PIPE '|'
 # define REDIR_FROM '<'
@@ -110,6 +113,12 @@ typedef struct s_subshell
 //utils.c
 int		fork1(void);
 void	exit_error(char *s);
+int		count_char(const char *str, char c);
+char	*ft_strstr(const char *haystack, const char *needle);
+int		has_unclosed_quotes(const char *s);
+
+// utils_2.c
+char	*ft_strtok(char *str, const char *delim);
 
 // parse
 t_cmd	*parsecmd(char *s);
@@ -118,6 +127,9 @@ t_cmd	*parseredirs(t_cmd *cmd, char **ps, char *es);
 // parse_utils
 t_cmd	*handle_parseredirs(t_cmd *cmd, char *q, char *eq, int tok);
 t_cmd	*handle_parseexec(char **ps, char *es, t_exec *cmd, t_cmd *ret);
+
+// parse_utils_2
+void	handle_d_quotes(char *s, char **es);
 
 // nulterminate
 t_cmd	*nulterminate(t_cmd *cmd);
@@ -134,6 +146,9 @@ t_cmd	*subshellcmd(t_cmd *subcmd);
 int		find_next_token(char **ps, char *es, char *tokens);
 int		get_token(char **ps, char *es, char **q, char **eq);
 
+//token utils
+void	skip_whitespace(char **s, char *es);
+
 // builtins
 int		vash_echo(char **args);
 int		vash_cd(char **args);
@@ -142,6 +157,9 @@ int		vash_env(void);
 int		vash_launch(char **argv);
 int		do_builtins(char *line);
 int		handle_builtins(char **args);
+int		ft_pwd(void);
+int		vash_unset(char **args);
+int		vash_export(char **args);
 
 // exec
 void	runcmd(t_cmd *cmd);
@@ -156,4 +174,13 @@ void	handle_subshell(t_subshell *subcmd, int *status);
 // signal
 void	handle_signals(void);
 
+// echo
+int		process_args(char *old_str, int no_newline);
+int		handle_no_args(char **args);
+void	*safe_malloc(size_t bytes);
+void	print_str(char *old_str, char *new_str, int no_newline);
+int		handle_null(int no_newline);
+void	handle_single_quoted_env_var(char *arg, char *old_str, int *j);
+void	handle_double_quoted_env_var(char *arg, char *old_str, int *j);
+void	handle_env_var(char *arg, char *old_str, int *j);
 #endif
