@@ -6,11 +6,11 @@
 /*   By: mac <mac@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 09:30:00 by mac               #+#    #+#             */
-/*   Updated: 2024/11/07 17:43:32 by mac              ###   ########.fr       */
+/*   Updated: 2024/11/18 17:41:32 by mac              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "minishell.h"
+#include "../../include/minishell.h"
 
 int	handle_no_args(char **args)
 {
@@ -74,7 +74,26 @@ int	process_args(char *old_str, int no_newline)
 	return (0);
 }
 
-int	vash_echo(char **args)
+static void	echo_status(char **args, t_context *context)
+{
+	int	i;
+
+	i = 1;
+	while (args[i])
+	{
+		if (strcmp(args[i], "$?") == 0)
+			ft_printf("%d", context->last_status);
+		else
+			ft_printf("%s", args[i]);
+		if (args[i + 1] != NULL)
+			ft_printf(" ");
+		i++;
+	}
+	ft_printf("\n");
+	exit(0);
+}
+
+int	vash_echo(char **args, t_context *context)
 {
 	char	old_str[1024];
 	int		i;
@@ -90,6 +109,8 @@ int	vash_echo(char **args)
 		no_newline = 1;
 		i++;
 	}
+	if (ft_strncmp(args[1], "$?", 3) == 0)
+		echo_status(args, context);
 	process_arguments(args, old_str, &i, &j);
 	old_str[j] = '\0';
 	process_args(old_str, no_newline);

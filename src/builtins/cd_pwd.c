@@ -3,21 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   cd_pwd.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mac <mac@student.42.fr>                    +#+  +:+       +#+        */
+/*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 13:16:09 by mac               #+#    #+#             */
-/*   Updated: 2024/11/07 17:35:09 by mac              ###   ########.fr       */
+/*   Updated: 2024/11/10 15:22:12 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "minishell.h"
+#include "../../include/minishell.h"
 
 int	vash_cd(char **args)
 {
 	char	*path;
 	char	cwd[1024];
 
-	if (args[1] == NULL)
+	if (args[1] == NULL || only_spaces(args[1]))
 	{
 		path = getenv("HOME");
 		if (path == NULL)

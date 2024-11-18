@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   echo_env.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mac <mac@student.42.fr>                    +#+  +:+       +#+        */
+/*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 12:00:52 by mac               #+#    #+#             */
-/*   Updated: 2024/11/07 18:19:25 by mac              ###   ########.fr       */
+/*   Updated: 2024/11/09 12:20:22 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "minishell.h"
+#include "../../include/minishell.h"
 
 void	handle_env_var(char *arg, char *old_str, int *j)
 {

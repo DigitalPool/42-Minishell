@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   minishell.h                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mac <mac@student.42.fr>                    +#+  +:+       +#+        */
+/*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/08 12:14:26 by vconesa-          #+#    #+#             */
-/*   Updated: 2024/11/07 15:37:02 by mac              ###   ########.fr       */
+/*   Updated: 2024/11/10 15:17:30 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,6 +110,19 @@ typedef struct s_subshell
 	t_cmd	*subcmd;
 }	t_subshell;
 
+typedef struct s_context
+{
+	int	last_status;
+}	t_context;
+
+typedef struct s_qsort
+{
+	char	*array;
+	char	*left;
+	char	*right;
+	char	*pivot;
+}	t_qsort;
+
 //utils.c
 int		fork1(void);
 void	exit_error(char *s);
@@ -119,6 +132,7 @@ int		has_unclosed_quotes(const char *s);
 
 // utils_2.c
 char	*ft_strtok(char *str, const char *delim);
+int		only_spaces(char *str);
 
 // parse
 t_cmd	*parsecmd(char *s);
@@ -150,26 +164,26 @@ int		get_token(char **ps, char *es, char **q, char **eq);
 void	skip_whitespace(char **s, char *es);
 
 // builtins
-int		vash_echo(char **args);
+int		vash_echo(char **args, t_context *context);
 int		vash_cd(char **args);
 int		vash_pwd(void);
 int		vash_env(void);
 int		vash_launch(char **argv);
 int		do_builtins(char *line);
-int		handle_builtins(char **args);
+int		handle_builtins(char **args, t_context *context);
 int		ft_pwd(void);
 int		vash_unset(char **args);
 int		vash_export(char **args);
 
 // exec
-void	runcmd(t_cmd *cmd);
-void	handle_herdoc(t_herdoc *hcmd);
-int		handle_pipe(t_pipe *pcmd);
-void	handle_redir(t_redir *rcmd);
-void	exec_pipe_child(t_cmd *cmd, int p[2], int is_left);
-void	handle_and_or(t_clist *lcmd, int *status);
-int		handle_exec(t_exec *ecmd);
-void	handle_subshell(t_subshell *subcmd, int *status);
+void	runcmd(t_cmd *cmd, t_context *context);
+void	handle_herdoc(t_herdoc *hcmd, t_context *context);
+int		handle_pipe(t_pipe *pcmd, t_context *context);
+void	handle_redir(t_redir *rcmd, t_context *context);
+void	exec_pipe_child(t_cmd *cmd, int p[2], int is_left, t_context *context);
+void	handle_and_or(t_clist *lcmd, int *status, t_context *context);
+int		handle_exec(t_exec *ecmd, t_context *context);
+void	handle_subshell(t_subshell *subcmd, int *status, t_context *context);
 
 // signal
 void	handle_signals(void);
@@ -183,4 +197,16 @@ int		handle_null(int no_newline);
 void	handle_single_quoted_env_var(char *arg, char *old_str, int *j);
 void	handle_double_quoted_env_var(char *arg, char *old_str, int *j);
 void	handle_env_var(char *arg, char *old_str, int *j);
+
+// export_env_utils.c
+void	print_sorted_env(char **environ);
+char	**copy_environ(char **environ, int *count);
+char	**expand_environ(char **environ, int size, int *count);
+int		ft_setenv(char *name, char *value, char ***environ);
+
+// ft_qsort
+int		compare_strings(const void *a, const void *b);
+void	ft_qsort(void *base, size_t nitems, size_t size,
+			int (*compar)(const void *, const void *));
+
 #endif
