@@ -1,3 +1,4 @@
+<img width="600" alt="Screenshot 2024-12-04 at 11 44 46 PM" src="https://github.com/user-attachments/assets/12fa5b88-3fd3-423b-931c-2bec71ebd6c6">
 # Minishell 🐚
 
 Welcome to **Minishell** — a custom shell program designed to provide a comprehensive hands-on exploration of systems programming and Unix-based shell functionalities!
