@@ -6,7 +6,7 @@
 /*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/08 12:14:26 by vconesa-          #+#    #+#             */
-/*   Updated: 2024/11/10 15:17:30 by vconesa-         ###   ########.fr       */
+/*   Updated: 2024/12/04 11:02:51 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@
 # include <signal.h>
 # include <glob.h>
 # include <termios.h>
+# include <dirent.h>
 // # include <linux/limits.h>
 
 # define EXEC_T 1
@@ -34,13 +35,13 @@
 # define OR_T 6
 # define SUBSHELL_T 7
 
-# define MAXARGS 10
+# define MAXARGS 50
 # define PROMPT	"\001\e[45m\002>>> \001\e[0m\e[33m\002Minishell>$ \001\e[0m\002"
 
 # define WHITESPACE " \t\r\v"
-# define SYMBOLS "<|>&()"
+# define SYMBOLS "<|>&()\"'"
 # define PERMISSIONS 0664
-# define MAX_BUFFER_SIZE 100
+# define MAX_BUFFER_SIZE 4064
 # define PATH_SEPARATOR ":"
 # define MAX_PATH_LENGTH 512
 
@@ -55,17 +56,29 @@
 # define OR	'o'
 # define OPEN_P '('
 # define CLOSE_P ')'
+# define D_QUOTE '"'
+# define S_QUOTE 39
+
+extern int	g_signal_received;
 
 typedef struct s_cmd
 {
 	int	type;
 }	t_cmd;
 
+typedef struct s_wildbuff
+{
+	char	*buffer;
+	size_t	len;
+	size_t	size;
+}	t_wildbuff;
+
 typedef struct s_exec
 {
-	t_cmd	base;
-	char	*argv[MAXARGS];
-	char	*eargv[MAXARGS];
+	t_cmd		base;
+	char		*argv[MAXARGS];
+	char		*eargv[MAXARGS];
+	t_wildbuff	buff_exp;
 }	t_exec;
 
 typedef struct s_redir_info
@@ -112,7 +125,10 @@ typedef struct s_subshell
 
 typedef struct s_context
 {
-	int	last_status;
+	int		last_status;
+	int		is_pipe_child;
+	int		redir_handled;
+	char	**env;
 }	t_context;
 
 typedef struct s_qsort
@@ -123,7 +139,7 @@ typedef struct s_qsort
 	char	*pivot;
 }	t_qsort;
 
-//utils.c
+// utils.c
 int		fork1(void);
 void	exit_error(char *s);
 int		count_char(const char *str, char c);
@@ -133,10 +149,12 @@ int		has_unclosed_quotes(const char *s);
 // utils_2.c
 char	*ft_strtok(char *str, const char *delim);
 int		only_spaces(char *str);
+int		is_builtin(char *cmd);
 
 // parse
-t_cmd	*parsecmd(char *s);
+t_cmd	*parsecmd(char *s, t_wildbuff *buf);
 t_cmd	*parseredirs(t_cmd *cmd, char **ps, char *es);
+t_cmd	*parseline(char **ps, char *es);
 
 // parse_utils
 t_cmd	*handle_parseredirs(t_cmd *cmd, char *q, char *eq, int tok);
@@ -160,53 +178,74 @@ t_cmd	*subshellcmd(t_cmd *subcmd);
 int		find_next_token(char **ps, char *es, char *tokens);
 int		get_token(char **ps, char *es, char **q, char **eq);
 
-//token utils
+// token utils
 void	skip_whitespace(char **s, char *es);
 
 // builtins
 int		vash_echo(char **args, t_context *context);
-int		vash_cd(char **args);
-int		vash_pwd(void);
-int		vash_env(void);
-int		vash_launch(char **argv);
-int		do_builtins(char *line);
-int		handle_builtins(char **args, t_context *context);
+int		vash_cd(char **args, t_context *context);
+int		vash_env(t_context *context);
+int		handle_builtins(char **args, t_context *context, t_cmd *cmd);
 int		ft_pwd(void);
-int		vash_unset(char **args);
-int		vash_export(char **args);
+int		vash_unset(char **args, t_context *context);
+int		vash_export(char **args, t_context *context);
 
 // exec
 void	runcmd(t_cmd *cmd, t_context *context);
 void	handle_herdoc(t_herdoc *hcmd, t_context *context);
-int		handle_pipe(t_pipe *pcmd, t_context *context);
+void	handle_pipe(t_pipe *pcmd, t_context *context);
 void	handle_redir(t_redir *rcmd, t_context *context);
 void	exec_pipe_child(t_cmd *cmd, int p[2], int is_left, t_context *context);
-void	handle_and_or(t_clist *lcmd, int *status, t_context *context);
+void	handle_and_or(t_clist *lcmd, t_context *context);
 int		handle_exec(t_exec *ecmd, t_context *context);
 void	handle_subshell(t_subshell *subcmd, int *status, t_context *context);
 
 // signal
+void	handle_sigint(int sig);
+void	handle_sigquit(int sig);
 void	handle_signals(void);
+void	ignore_signals(void);
+void	default_signals(void);
+void	handle_sigint_herdoc(int sig);
+void	suppress_output(void);
+
+// context
+void	init_context(char **env, t_context *context);
+void	free_env(t_context *context);
+void	init_buff(t_wildbuff *buf, int argc, char **argv);
+void	check_sigint(t_context *context);
+
+// free_cmd
+void	free_cmd(t_cmd *cmd);
 
 // echo
 int		process_args(char *old_str, int no_newline);
-int		handle_no_args(char **args);
 void	*safe_malloc(size_t bytes);
 void	print_str(char *old_str, char *new_str, int no_newline);
-int		handle_null(int no_newline);
-void	handle_single_quoted_env_var(char *arg, char *old_str, int *j);
-void	handle_double_quoted_env_var(char *arg, char *old_str, int *j);
-void	handle_env_var(char *arg, char *old_str, int *j);
+void	handle_s_quoted_env(char *arg, char *old_str, int *j,
+			t_context *context);
+void	handle_d_quoted_env(char *arg, char *old_str, int *j,
+			t_context *context);
+void	handle_env_var(char *arg, char *old_str, int *j, t_context *context);
+char	*ft_getenv(const char *name, char **env);
 
 // export_env_utils.c
-void	print_sorted_env(char **environ);
-char	**copy_environ(char **environ, int *count);
-char	**expand_environ(char **environ, int size, int *count);
-int		ft_setenv(char *name, char *value, char ***environ);
+void	print_sorted_env(t_context *context);
+char	**copy_environ(int *count, t_context *context);
+int		ft_setenv(char *name, char *value, t_context *context);
 
 // ft_qsort
 int		compare_strings(const void *a, const void *b);
 void	ft_qsort(void *base, size_t nitems, size_t size,
 			int (*compar)(const void *, const void *));
+
+// wildcards
+void	expand_wildcards_buff(char **ps, char **es, t_wildbuff *buf);
+
+// wildcards_utils
+void	set_values(int *i, int i_value, int *j, int j_value);
+void	ensure_buffer_capacity(t_wildbuff *buf, size_t additional);
+void	finalize_buffer(t_wildbuff *buf);
+void	copy_literal_pattern(char *pattern, size_t patt_len, t_wildbuff *buf);
 
 #endif

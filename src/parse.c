@@ -6,7 +6,7 @@
 /*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/09 11:45:53 by vconesa-          #+#    #+#             */
-/*   Updated: 2024/11/05 20:28:05 by vconesa-         ###   ########.fr       */
+/*   Updated: 2024/12/01 13:41:44 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,10 @@ t_cmd	*parseredirs(t_cmd *cmd, char **ps, char *es)
 	{
 		tok = get_token(ps, es, 0, 0);
 		if (get_token(ps, es, &q, &eq) != OTHER)
-			exit_error("missing file for redirection");
+		{
+			printf("missing file for redirection\n");
+			return (NULL);
+		}
 		cmd = handle_parseredirs(cmd, q, eq, tok);
 	}
 	return (cmd);
@@ -50,7 +53,7 @@ t_cmd	*parsepipe(char **ps, char *es)
 	{
 		token = get_token(ps, es, 0, 0);
 		if (token == OR)
-			cmd = listcmd(cmd, parsepipe(ps, es), OR_T);
+			cmd = listcmd(cmd, parseline(ps, es), OR_T);
 		else
 			cmd = pipecmd(cmd, parsepipe(ps, es));
 	}
@@ -84,19 +87,24 @@ t_cmd	*parseline(char **ps, char *es)
 	return (cmd);
 }
 
-t_cmd	*parsecmd(char *s)
+t_cmd	*parsecmd(char *s, t_wildbuff *buf)
 {
-	char	*es;
-	t_cmd	*cmd;
+	char		*es;
+	t_cmd		*cmd;
 
 	es = s + (ft_strlen(s));
 	handle_d_quotes(s, &es);
+	if (ft_strchr(s, '*'))
+		expand_wildcards_buff(&s, &es, buf);
 	cmd = parseline(&s, es);
+	if (!cmd)
+		return (NULL);
 	find_next_token(&s, es, "");
 	if (s != es)
 	{
 		printf("left overs: %s\n", s);
-		exit_error("syntax error\n");
+		printf("syntax error\n");
+		return (0);
 	}
 	nulterminate(cmd);
 	return (cmd);

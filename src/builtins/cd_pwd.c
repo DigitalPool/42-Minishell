@@ -6,20 +6,20 @@
 /*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 13:16:09 by mac               #+#    #+#             */
-/*   Updated: 2024/11/10 15:22:12 by vconesa-         ###   ########.fr       */
+/*   Updated: 2024/12/04 09:41:52 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../include/minishell.h"
 
-int	vash_cd(char **args)
+int	vash_cd(char **args, t_context *context)
 {
 	char	*path;
 	char	cwd[1024];
 
 	if (args[1] == NULL || only_spaces(args[1]))
 	{
-		path = getenv("HOME");
+		path = ft_getenv("HOME", context->env);
 		if (path == NULL)
 		{
 			perror("error: cd");
@@ -47,8 +47,8 @@ int	ft_pwd(void)
 	if (getcwd(cwd, 4096))
 	{
 		printf("%s\n", cwd);
-		return (1);
+		return (0);
 	}
 	else
-		return (0);
+		return (1);
 }

@@ -6,11 +6,13 @@
 /*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/08 13:23:13 by vconesa-          #+#    #+#             */
-/*   Updated: 2024/11/09 11:34:37 by vconesa-         ###   ########.fr       */
+/*   Updated: 2024/12/04 10:36:22 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/minishell.h"
+
+int	g_signal_received = 0;
 
 int	getcmd(char *buff, int nbuf)
 {
@@ -32,67 +34,105 @@ int	getcmd(char *buff, int nbuf)
 	return (0);
 }
 
+void	handle_signal_exit_status(t_exec *cmd, int status, t_context *context)
+{
+	if (WIFSIGNALED(status))
+	{
+		if (WTERMSIG(status) == SIGINT)
+		{
+			if (ft_strncmp(cmd->argv[0], "cat", 4) == 0)
+			{
+				write(1, "\n", 1);
+				context->last_status = 130;
+			}
+			else
+				context->last_status = 128 + WTERMSIG(status);
+		}
+		else if (WTERMSIG(status) == SIGQUIT)
+		{
+			if (ft_strncmp(cmd->argv[0], "cat", 4) == 0)
+			{
+				write(1, "\n", 1);
+				context->last_status = 131;
+			}
+			else
+				context->last_status = 128 + WTERMSIG(status);
+		}
+	}
+	else
+		context->last_status = WEXITSTATUS(status);
+}
+
+void	handle_exec_t(t_exec *cmd, t_context *cont)
+{
+	int	status;
+
+	if (is_builtin(cmd->argv[0]))
+		cont->last_status = handle_builtins(cmd->argv, cont, (t_cmd *)cmd);
+	else
+	{
+		if (fork1() == 0)
+		{
+			default_signals();
+			exit(handle_exec(cmd, cont));
+		}
+		ignore_signals();
+		wait(&status);
+		signal(SIGINT, handle_sigint);
+		signal(SIGQUIT, handle_sigquit);
+		handle_signal_exit_status(cmd, status, cont);
+	}
+}
+
 void	runcmd(t_cmd *cmd, t_context *context)
 {
 	int	status;
 
 	if (cmd == 0)
-		exit(1);
+		return ;
 	status = 0;
 	if (cmd->type == EXEC_T)
-		status = handle_exec((t_exec *)cmd, context);
+		handle_exec_t((t_exec *)cmd, context);
 	else if (cmd->type == REDIR_T)
 		handle_redir((t_redir *)cmd, context);
 	else if (cmd->type == PIPE_T)
-	{
-		status = handle_pipe((t_pipe *)cmd, context);
-		exit(status);
-	}
+		handle_pipe((t_pipe *)cmd, context);
 	else if (cmd->type == HERDOC_T)
 		handle_herdoc((t_herdoc *)cmd, context);
 	else if (cmd->type == AND_T || cmd->type == OR_T)
-		handle_and_or((t_clist *)cmd, &status, context);
+		handle_and_or((t_clist *)cmd, context);
 	else if (cmd->type == SUBSHELL_T)
 		handle_subshell((t_subshell *)cmd, &status, context);
 	else
 		exit_error("runcmd error");
-	context->last_status = WEXITSTATUS(status);
-	exit(context->last_status);
+	if (context->is_pipe_child)
+		exit(context->last_status);
 }
 
-static void	initialize_fd(void)
+int	main(int argc, char **argv, char **env)
 {
-	int	fd;
-
-	fd = open(PROMPT, O_RDWR);
-	while (fd >= 0)
-	{
-		if (fd >= 3)
-		{
-			close(fd);
-			break ;
-		}
-		fd = open(PROMPT, O_RDWR);
-	}
-}
-
-int	main(void)
-{
-	static char	buff[100];
+	static char	buff[MAX_BUFFER_SIZE];
 	t_context	context;
+	t_cmd		*cmd;
+	t_wildbuff	buf;
 
-	context.last_status = 0;
-	initialize_fd();
+	init_buff(&buf, argc, argv);
+	init_context(env, &context);
 	handle_signals();
 	while ((getcmd(buff, sizeof(buff)) >= 0))
 	{
+		check_sigint(&context);
 		add_history(buff);
-		if (do_builtins(buff))
-			continue ;
-		if (fork1() == 0)
-			runcmd(parsecmd(buff), &context);
-		wait(&context.last_status);
-		context.last_status = WEXITSTATUS(context.last_status);
+		cmd = parsecmd(buff, &buf);
+		if (cmd)
+			runcmd(cmd, &context);
+		free_cmd(cmd);
+		cmd = NULL;
+		if (buf.buffer)
+			free(buf.buffer);
+		buf.buffer = NULL;
 	}
+	if (context.env)
+		free_env(&context);
 	exit(1);
 }

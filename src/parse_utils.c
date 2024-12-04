@@ -6,7 +6,7 @@
 /*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/20 20:11:51 by vconesa-          #+#    #+#             */
-/*   Updated: 2024/11/05 20:30:59 by vconesa-         ###   ########.fr       */
+/*   Updated: 2024/12/04 19:57:46 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,7 +66,7 @@ t_cmd	*handle_parseexec(char **ps, char *es, t_exec *cmd, t_cmd *ret)
 		if (token == 0)
 			break ;
 		if (token != OTHER)
-			exit_error("syntax error\n");
+			printf("syntax error");
 		else
 			cmd->argv[i] = q;
 		cmd->eargv[i] = eq;
@@ -75,5 +75,7 @@ t_cmd	*handle_parseexec(char **ps, char *es, t_exec *cmd, t_cmd *ret)
 	}
 	cmd->argv[i] = 0;
 	cmd->eargv[i] = 0;
+	if (!ret)
+		free_cmd((t_cmd *)cmd);
 	return (ret);
 }

@@ -1,36 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   echo_utils.c                                       :+:      :+:    :+:   */
+/*   inits_bonus.c                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vconesa- <vconesa-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/07 09:30:00 by mac               #+#    #+#             */
-/*   Updated: 2024/12/01 15:38:51 by vconesa-         ###   ########.fr       */
+/*   Created: 2024/10/23 20:14:43 by vconesa-          #+#    #+#             */
+/*   Updated: 2024/11/20 10:10:53 by vconesa-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../include/minishell.h"
 
-void	*safe_malloc(size_t bytes)
+t_cmd	*subshellcmd(t_cmd *subcmd)
 {
-	void	*new_str;
+	t_subshell	*cmd;
 
-	new_str = (char *)malloc(bytes);
-	if (new_str == NULL)
-	{
-		printf("error allocating new string");
-		return (0);
-	}
-	return (new_str);
-}
-
-void	print_str(char *old_str, char *new_str, int no_newline)
-{
-	if (no_newline)
-		printf("%s", new_str);
-	else
-		printf("%s\n", new_str);
-	if (new_str != old_str)
-		free(new_str);
+	cmd = malloc(sizeof(*cmd));
+	ft_memset(cmd, 0, sizeof(*cmd));
+	cmd->base.type = SUBSHELL_T;
+	cmd->subcmd = subcmd;
+	return ((t_cmd *)cmd);
 }
